@@ -28,7 +28,7 @@ const server = http.createServer((req, res) => {
     res.end(
       JSON.stringify({
         time: new Date().toString(),
-      })
+      }),
     );
   } else if (req.method === "GET" && req.url === "/timePage") {
     res.writeHead(200, {
@@ -44,17 +44,29 @@ const server = http.createServer((req, res) => {
     });
 
     req.on("end", () => {
-      const parsedBody = JSON.parse(body);
+      try {
+        const parsedBody = JSON.parse(body);
 
-      res.writeHead(200, {
-        "Content-Type": "application/json",
-      });
+        res.writeHead(200, {
+          "Content-Type": "application/json",
+        });
 
-      res.end(
-        JSON.stringify({
-          weReceived: parsedBody,
-        })
-      );
+        res.end(
+          JSON.stringify({
+            weReceived: parsedBody,
+          }),
+        );
+      } catch (error) {
+        res.writeHead(400, {
+          "Content-Type": "application/json",
+        });
+
+        res.end(
+          JSON.stringify({
+            message: "Invalid JSON.",
+          }),
+        );
+      }
     });
   } else {
     res.writeHead(404, {
@@ -64,7 +76,7 @@ const server = http.createServer((req, res) => {
     res.end(
       JSON.stringify({
         message: "That route is not available.",
-      })
+      }),
     );
   }
 });
