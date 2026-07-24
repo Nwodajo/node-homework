@@ -18,12 +18,36 @@ app.use((req, res, next) => {
   console.log(
     `[${new Date().toISOString()}]: ${req.method} ${req.path} (${req.requestId})`
   );
+
   next();
 });
 
-// Built-in middleware
-app.use(express.json());
+// Security headers middleware
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+
+  next();
+});
+
+// Parse JSON request bodies with a 1 MB limit
+app.use(express.json({ limit: "1mb" }));
+
+// Serve static files from week-3-middleware/public
 app.use(express.static(path.join(__dirname, "public")));
+
+// Validate Content-Type for POST requests
+app.use((req, res, next) => {
+  if (req.method === "POST" && !req.is("application/json")) {
+    return res.status(400).json({
+      error: "Content-Type must be application/json",
+      requestId: req.requestId,
+    });
+  }
+
+  next();
+});
 
 // Dog routes
 app.use("/", dogsRouter);
@@ -38,10 +62,19 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err);
+  const statusCode = err.statusCode || 500;
 
-  res.status(500).json({
-    error: "Internal Server Error",
+  if (statusCode >= 400 && statusCode < 500) {
+    console.warn(`WARN: ${err.name} - ${err.message}`);
+  } else {
+    console.error(`ERROR: ${err.name} - ${err.message}`);
+  }
+
+  res.status(statusCode).json({
+    error:
+      statusCode === 500
+        ? "Internal Server Error"
+        : err.message,
     requestId: req.requestId,
   });
 });

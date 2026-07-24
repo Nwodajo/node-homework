@@ -1,18 +1,18 @@
 const register = (req, res) => {
   const { name, email, password } = req.body;
 
-  const newUser = {
+  const user = {
     name,
     email,
     password,
   };
 
-  global.users.push(newUser);
-  global.user_id = newUser;
+  global.users.push(user);
+  global.user_id = user;
 
-  res.status(201).json({
-    name: newUser.name,
-    email: newUser.email,
+  return res.status(201).json({
+    name: user.name,
+    email: user.email,
   });
 };
 
@@ -41,9 +41,7 @@ const logon = (req, res) => {
 const logoff = (req, res) => {
   global.user_id = null;
 
-  return res.status(200).json({
-    message: "User logged off successfully",
-  });
+  return res.sendStatus(200);
 };
 
 module.exports = {
