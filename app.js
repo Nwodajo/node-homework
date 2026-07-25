@@ -2,7 +2,9 @@ const express = require("express");
 
 const timeRouter = require("./routes/timeRoutes");
 const userRouter = require("./routes/userRoutes");
+const taskRouter = require("./routes/taskRoutes");
 
+const authMiddleware = require("./middleware/auth");
 const notFound = require("./middleware/not-found");
 const errorHandler = require("./middleware/error-handler");
 
@@ -31,8 +33,11 @@ app.post("/testpost", (req, res) => {
 // Week 2 routes
 app.use("/api", timeRouter);
 
-// Assignment 3 user routes
+// Assignment 3 public user routes
 app.use("/api/users", userRouter);
+
+// Assignment 4 protected task routes
+app.use("/api/tasks", authMiddleware, taskRouter);
 
 // 404 middleware must come after all routes
 app.use(notFound);
