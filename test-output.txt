@@ -1,0 +1,55 @@
+
+> node-homework@1.0.0 tdd
+> ./tdd.sh assignment5a
+
+  console.log
+    WITH new_order AS (INSERT INTO orders (customer_id, employee_id, date) VALUES ((SELECT customer_id FROM customers WHERE customer_name = 'Perez and Sons'), (SELECT employee_id FROM employees WHERE first_name = 'Miranda' AND last_name = 'Harris'), CURRENT_DATE) RETURNING order_id) INSERT INTO line_items (order_id, product_id, quantity) SELECT new_order.order_id, cheapest_products.product_id, 10 FROM new_order CROSS JOIN (SELECT product_id FROM products ORDER BY price LIMIT 5) AS cheapest_products;
+
+      at Object.log (tdd/assignment5a.test.js:176:11)
+
+FAIL tdd/assignment5a.test.js
+  ✓ Total price of the first 5 orders (4 ms)
+  ✓ Average total order price for each customer (2 ms)
+  ✕ creating a new order (1 ms)
+  ✕ use HAVING to find employees with > 5 orders (7 ms)
+
+  ● creating a new order
+
+    expect(received).toHaveProperty(path)
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      124 |   expect(sql_line).not.toBe(undefined);
+      125 |   let result = await client.query(sql_line);
+    > 126 |   expect(result.rows[0]).toHaveProperty("customer_id");
+          |                          ^
+      127 |   expect(result.rows[0].customer_id).toBe(16);
+      128 |   sql_line = one_sql_line();
+      129 |   expect(sql_line).not.toBe(undefined);
+
+      at Object.toHaveProperty (tdd/assignment5a.test.js:126:26)
+
+  ● use HAVING to find employees with > 5 orders
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 12
+    Received:   0
+
+      175 |   let result = await client.query(sql_line);
+      176 |   console.log(sql_line);
+    > 177 |   expect(result.rows.length).toBeGreaterThan(12);
+          |                              ^
+      178 |   expect(result.rows[0]).toHaveProperty("order_count");
+      179 |   expect(result.rows[0]).toHaveProperty("last_name");
+      180 |   expect(result.rows[0].last_name).toBe("Bowman");
+
+      at Object.toBeGreaterThan (tdd/assignment5a.test.js:177:30)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 2 passed, 4 total
+Snapshots:   0 total
+Time:        0.121 s, estimated 1 s
+Ran all test suites matching ^tdd/assignment5a\.test\.js$.
