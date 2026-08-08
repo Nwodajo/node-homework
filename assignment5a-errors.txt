@@ -1,0 +1,80 @@
+(node:24949) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tdd/assignment5a.test.js
+  ✕ Total price of the first 5 orders (66 ms)
+  ✕ Average total order price for each customer (65 ms)
+  ✕ creating a new order (65 ms)
+  ✕ use HAVING to find employees with > 5 orders (66 ms)
+
+  ● Total price of the first 5 orders
+
+    error: relation "orders" does not exist
+
+       97 |   const sql_line = one_sql_line();
+       98 |   expect(sql_line).not.toBe(undefined);
+    >  99 |   let result = await client.query(sql_line);
+          |                ^
+      100 |   expect(result.rows.length).toBe(5);
+      101 |   expect(result.rows[0]).toHaveProperty("order_id");
+      102 |   expect(result.rows[0].order_id).toBe(1);
+
+      at node_modules/pg/lib/client.js:631:17
+      at Object.<anonymous> (tdd/assignment5a.test.js:99:16)
+
+  ● Average total order price for each customer
+
+    error: relation "customers" does not exist
+
+      110 |   const sql_line = one_sql_line();
+      111 |   expect(sql_line).not.toBe(undefined);
+    > 112 |   let result = await client.query(sql_line);
+          |                ^
+      113 |   expect(result.rows.length).toBeGreaterThan(20);
+      114 |   expect(result.rows[0]).toHaveProperty("customer_name");
+      115 |   expect(result.rows[0].customer_name).toBe("Anderson and Sons");
+
+      at node_modules/pg/lib/client.js:631:17
+      at Object.<anonymous> (tdd/assignment5a.test.js:112:16)
+
+  ● creating a new order
+
+    error: relation "customers" does not exist
+
+      123 |   let sql_line = one_sql_line();
+      124 |   expect(sql_line).not.toBe(undefined);
+    > 125 |   let result = await client.query(sql_line);
+          |                ^
+      126 |   expect(result.rows[0]).toHaveProperty("customer_id");
+      127 |   expect(result.rows[0].customer_id).toBe(16);
+      128 |   sql_line = one_sql_line();
+
+      at node_modules/pg/lib/client.js:631:17
+      at Object.<anonymous> (tdd/assignment5a.test.js:125:16)
+
+  ● use HAVING to find employees with > 5 orders
+
+    error: relation "employees" does not exist
+
+      173 |   let sql_line = one_sql_line();
+      174 |   expect(sql_line).not.toBe(undefined);
+    > 175 |   let result = await client.query(sql_line);
+          |                ^
+      176 |   console.log(sql_line);
+      177 |   expect(result.rows.length).toBeGreaterThan(12);
+      178 |   expect(result.rows[0]).toHaveProperty("order_count");
+
+      at node_modules/pg/lib/client.js:631:17
+      at Object.<anonymous> (tdd/assignment5a.test.js:175:16)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 4 total
+Snapshots:   0 total
+Time:        1.009 s, estimated 2 s
+Ran all test suites matching ^tdd/assignment5a\.test\.js$.
