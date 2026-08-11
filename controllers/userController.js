@@ -1,4 +1,4 @@
-const pool = require("../db/pg-pool");
+const prisma = require("../db/prisma");
 const {
   hashPassword,
   comparePassword,
@@ -28,14 +28,19 @@ const register = async (req, res, next) => {
   try {
     const hashedPassword = await hashPassword(value.password);
 
-    const result = await pool.query(
-      `INSERT INTO users (email, name, hashed_password)
-       VALUES ($1, $2, $3)
-       RETURNING id, email, name`,
-      [value.email, value.name, hashedPassword]
-    );
+    const user = await prisma.user.create({
+      data: {
+        email: value.email,
+        name: value.name,
+        hashedPassword,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
 
-    const user = result.rows[0];
     global.user_id = user.id;
 
     return res.status(201).json({
@@ -43,7 +48,10 @@ const register = async (req, res, next) => {
       email: user.email,
     });
   } catch (error) {
-    if (error.code === "23505") {
+    if (
+      error.name === "PrismaClientKnownRequestError" &&
+      error.code === "P2002"
+    ) {
       return res.status(400).json({
         error: "Email is already registered",
       });
@@ -54,24 +62,27 @@ const register = async (req, res, next) => {
 };
 
 const logon = async (req, res, next) => {
-  const { email, password } = req.body;
+  let { email } = req.body;
+  const { password } = req.body;
 
   try {
-    const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
+    email = email.toLowerCase();
 
-    if (result.rows.length === 0) {
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
       return res.status(401).json({
         error: "Invalid email or password",
       });
     }
 
-    const user = result.rows[0];
     const passwordMatches = await comparePassword(
       password,
-      user.hashed_password
+      user.hashedPassword
     );
 
     if (!passwordMatches) {

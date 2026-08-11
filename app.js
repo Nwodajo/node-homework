@@ -6,7 +6,7 @@ const taskRouter = require("./routes/taskRoutes");
 
 const notFound = require("./middleware/not-found");
 const errorHandler = require("./middleware/error-handler");
-const pool = require("./db/pg-pool");
+const prisma = require("./db/prisma");
 
 const app = express();
 
@@ -26,7 +26,7 @@ app.get("/", (req, res) => {
 // Database health check.
 app.get("/health", async (req, res) => {
   try {
-    await pool.query("SELECT 1");
+    await prisma.$queryRaw`SELECT 1`;
 
     res.status(200).json({
       status: "ok",
@@ -34,7 +34,9 @@ app.get("/health", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      message: `db not connected, error: ${error.message}`,
+      status: "error",
+      db: "not connected",
+      error: error.message,
     });
   }
 });
@@ -63,12 +65,13 @@ const server = app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}...`);
 });
 
-// Close the server and database connections safely.
+// Close the server and Prisma connection safely.
 const shutdown = async () => {
   console.log("Shutting down server...");
 
   server.close(async () => {
-    await pool.end();
+    await prisma.$disconnect();
+    console.log("Prisma disconnected");
     console.log("Database connections closed.");
     process.exit(0);
   });
