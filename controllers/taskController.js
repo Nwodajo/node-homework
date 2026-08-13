@@ -181,7 +181,7 @@ module.exports = {
   update,
   deleteTask,
 
-  // Aliases for your existing routes.
+  // Aliases required by the existing routes.
   getTasks: index,
   createTask: create,
   updateTask: update,
