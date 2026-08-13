@@ -78,10 +78,8 @@ const show = async (req, res, next) => {
   try {
     const task = await prisma.task.findUnique({
       where: {
-        id_userId: {
-          id,
-          userId: global.user_id,
-        },
+        id,
+        userId: global.user_id,
       },
       select: {
         id: true,
@@ -98,6 +96,12 @@ const show = async (req, res, next) => {
 
     return res.status(200).json(task);
   } catch (error) {
+    if (error.code === "P2025") {
+      return res.status(404).json({
+        error: "Task not found",
+      });
+    }
+
     return passError(error, next);
   }
 };
@@ -119,10 +123,8 @@ const update = async (req, res, next) => {
   try {
     const task = await prisma.task.update({
       where: {
-        id_userId: {
-          id,
-          userId: global.user_id,
-        },
+        id,
+        userId: global.user_id,
       },
       data: value,
       select: {
@@ -150,10 +152,8 @@ const deleteTask = async (req, res, next) => {
   try {
     const task = await prisma.task.delete({
       where: {
-        id_userId: {
-          id,
-          userId: global.user_id,
-        },
+        id,
+        userId: global.user_id,
       },
       select: {
         id: true,
