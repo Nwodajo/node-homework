@@ -30,7 +30,7 @@ const register = async (req, res, next) => {
 
     const user = await prisma.user.create({
       data: {
-        email: value.email,
+        email: value.email.toLowerCase(),
         name: value.name,
         hashedPassword,
       },
@@ -62,15 +62,25 @@ const register = async (req, res, next) => {
 };
 
 const logon = async (req, res, next) => {
-  let { email } = req.body;
-  const { password } = req.body;
+  const { email, password } = req.body;
+
+  if (
+    typeof email !== "string" ||
+    email.trim() === "" ||
+    typeof password !== "string" ||
+    password === ""
+  ) {
+    return res.status(401).json({
+      error: "Invalid email or password",
+    });
+  }
 
   try {
-    email = email.toLowerCase();
+    const normalizedEmail = email.toLowerCase();
 
     const user = await prisma.user.findUnique({
       where: {
-        email,
+        email: normalizedEmail,
       },
     });
 
