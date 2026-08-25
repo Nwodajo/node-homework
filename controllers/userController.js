@@ -1,9 +1,11 @@
 const prisma = require("../db/prisma");
+
 const {
   hashPassword,
   comparePassword,
 } = require("../utils/passwordUtils");
-const userSchema = require("../validation/userSchema");
+
+const { userSchema } = require("../validation/userSchema");
 
 const passError = (error, next) => {
   if (typeof next === "function") {
@@ -28,32 +30,75 @@ const register = async (req, res, next) => {
   try {
     const hashedPassword = await hashPassword(value.password);
 
-    const user = await prisma.user.create({
-      data: {
-        email: value.email.toLowerCase(),
-        name: value.name,
-        hashedPassword,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: value.email.toLowerCase(),
+          name: value.name,
+          hashedPassword,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      });
+
+      const welcomeTaskData = [
+        {
+          title: "Complete your profile",
+          userId: user.id,
+          priority: "medium",
+        },
+        {
+          title: "Add your first task",
+          userId: user.id,
+          priority: "high",
+        },
+        {
+          title: "Explore the app",
+          userId: user.id,
+          priority: "low",
+        },
+      ];
+
+      await tx.task.createMany({
+        data: welcomeTaskData,
+      });
+
+      const welcomeTasks = await tx.task.findMany({
+        where: {
+          userId: user.id,
+          title: {
+            in: welcomeTaskData.map((task) => task.title),
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          isCompleted: true,
+          userId: true,
+          priority: true,
+        },
+      });
+
+      return {
+        user,
+        welcomeTasks,
+      };
     });
 
-    global.user_id = user.id;
+    global.user_id = result.user.id;
 
     return res.status(201).json({
-      name: user.name,
-      email: user.email,
+      user: result.user,
+      welcomeTasks: result.welcomeTasks,
+      transactionStatus: "success",
     });
   } catch (error) {
-    if (
-      error.name === "PrismaClientKnownRequestError" &&
-      error.code === "P2002"
-    ) {
+    if (error.code === "P2002") {
       return res.status(400).json({
-        error: "Email is already registered",
+        error: "Email already registered",
       });
     }
 
@@ -76,11 +121,9 @@ const logon = async (req, res, next) => {
   }
 
   try {
-    const normalizedEmail = email.toLowerCase();
-
     const user = await prisma.user.findUnique({
       where: {
-        email: normalizedEmail,
+        email: email.toLowerCase(),
       },
     });
 
@@ -112,7 +155,7 @@ const logon = async (req, res, next) => {
   }
 };
 
-const logoff = (req, res) => {
+const logoff = async (req, res) => {
   global.user_id = null;
   return res.sendStatus(200);
 };
