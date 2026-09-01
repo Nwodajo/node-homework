@@ -5,7 +5,7 @@ SELECT employee_id FROM employees WHERE first_name = 'Miranda' AND last_name = '
 SELECT product_id FROM products ORDER BY price LIMIT 5;
 BEGIN;
 INSERT INTO orders (customer_id, employee_id, date) VALUES ((SELECT customer_id FROM customers WHERE customer_name = 'Perez and Sons'), (SELECT employee_id FROM employees WHERE first_name = 'Miranda' AND last_name = 'Harris'), '2026-08-05') RETURNING order_id;
-INSERT INTO line_items (order_id, product_id, quantity) VALUES (999999, 23, 10), (999999, 18, 10), (999999, 43, 10), (999999, 9, 10), (999999, 44, 10);
+INSERT INTO line_items (order_id, product_id, quantity) VALUES (250, 23, 10), (250, 18, 10), (250, 43, 10), (250, 9, 10), (250, 44, 10);
 COMMIT;
-SELECT * FROM line_items WHERE order_id = 999999;
+SELECT * FROM line_items WHERE order_id = 250;
 SELECT employees.first_name, employees.last_name, COUNT(orders.order_id) AS order_count FROM employees JOIN orders ON employees.employee_id = orders.employee_id GROUP BY employees.employee_id, employees.first_name, employees.last_name HAVING COUNT(orders.order_id) > 5 ORDER BY employees.last_name;
