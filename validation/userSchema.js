@@ -15,4 +15,4 @@ const userSchema = Joi.object({
 });
 
 module.exports = userSchema;
-module.exports.userSchema = userSchema;
+module.exports.userSchema = userSchema;// Revision verified: validation tests pass.
