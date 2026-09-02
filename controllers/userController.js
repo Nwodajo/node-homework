@@ -1,8 +1,13 @@
 const pool = require("../db/pg-pool");
+const prisma = require("../db/prisma");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+
 const {
   hashPassword,
   comparePassword,
 } = require("../utils/passwordUtils");
+
 const userSchema = require("../validation/userSchema");
 
 const passError = (error, next) => {
@@ -11,6 +16,29 @@ const passError = (error, next) => {
   }
 
   throw error;
+};
+
+const createSession = (res, user) => {
+  const csrfToken = crypto.randomBytes(32).toString("hex");
+
+  const token = jwt.sign(
+    {
+      id: user.id,
+      csrfToken,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1h",
+    }
+  );
+
+  res.cookie("jwt", token, {
+    httpOnly: true,
+    sameSite: "Strict",
+    secure: process.env.NODE_ENV === "production",
+  });
+
+  return csrfToken;
 };
 
 const register = async (req, res, next) => {
@@ -36,11 +64,35 @@ const register = async (req, res, next) => {
     );
 
     const user = result.rows[0];
-    global.user_id = user.id;
+
+    await prisma.Task.createMany({
+      data: [
+        {
+          title: "Task 1",
+          isCompleted: false,
+          userId: user.id,
+        },
+        {
+          title: "Task 2",
+          isCompleted: false,
+          userId: user.id,
+        },
+        {
+          title: "Task 3",
+          isCompleted: false,
+          userId: user.id,
+        },
+      ],
+    });
+
+    const csrfToken = createSession(res, user);
 
     return res.status(201).json({
-      name: user.name,
-      email: user.email,
+      user: {
+        name: user.name,
+        email: user.email,
+      },
+      csrfToken,
     });
   } catch (error) {
     if (error.code === "23505") {
@@ -69,6 +121,7 @@ const logon = async (req, res, next) => {
     }
 
     const user = result.rows[0];
+
     const passwordMatches = await comparePassword(
       password,
       user.hashed_password
@@ -80,11 +133,16 @@ const logon = async (req, res, next) => {
       });
     }
 
-    global.user_id = user.id;
+    const csrfToken = createSession(res, user);
 
     return res.status(200).json({
       name: user.name,
       email: user.email,
+      user: {
+        name: user.name,
+        email: user.email,
+      },
+      csrfToken,
     });
   } catch (error) {
     return passError(error, next);
@@ -92,7 +150,12 @@ const logon = async (req, res, next) => {
 };
 
 const logoff = (req, res) => {
-  global.user_id = null;
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: "Strict",
+    secure: process.env.NODE_ENV === "production",
+  });
+
   return res.sendStatus(200);
 };
 
