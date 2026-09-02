@@ -26,18 +26,20 @@ const create = async (req, res, next) => {
   }
 
   try {
-    const task = await prisma.task.create({
+    const task = await prisma.Task.create({
       data: {
         title: value.title,
         isCompleted: value.isCompleted,
-        priority: value.priority,
-        userId: global.user_id,
+        user: {
+          connect: {
+            id: req.user.id,
+          },
+        },
       },
       select: {
         id: true,
         title: true,
         isCompleted: true,
-        priority: true,
       },
     });
 
@@ -49,68 +51,22 @@ const create = async (req, res, next) => {
 
 const index = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const skip = (page - 1) * limit;
-
-    const whereClause = {
-      userId: global.user_id,
-    };
-
-    if (req.query.find) {
-      whereClause.title = {
-        contains: req.query.find,
-        mode: "insensitive",
-      };
-    }
-
-    const tasks = await prisma.task.findMany({
-      where: whereClause,
+    const tasks = await prisma.Task.findMany({
+      where: {
+        userId: req.user.id,
+      },
       select: {
         id: true,
         title: true,
         isCompleted: true,
-        priority: true,
-        createdAt: true,
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
       },
-      skip,
-      take: limit,
       orderBy: {
-        createdAt: "desc",
+        id: "desc",
       },
     });
-
-    const totalTasks = await prisma.task.count({
-      where: whereClause,
-    });
-
-    const formattedTasks = tasks.map((task) => ({
-      id: task.id,
-      title: task.title,
-      isCompleted: task.isCompleted,
-      priority: task.priority,
-      createdAt: task.createdAt,
-      User: task.user,
-    }));
-
-    const pagination = {
-      page,
-      limit,
-      total: totalTasks,
-      pages: Math.ceil(totalTasks / limit),
-      hasNext: page * limit < totalTasks,
-      hasPrev: page > 1,
-    };
 
     return res.status(200).json({
-      tasks: formattedTasks,
-      pagination,
+      tasks,
     });
   } catch (error) {
     return passError(error, next);
@@ -127,25 +83,15 @@ const show = async (req, res, next) => {
   }
 
   try {
-    const task = await prisma.task.findUnique({
+    const task = await prisma.Task.findFirst({
       where: {
-        id_userId: {
-          id,
-          userId: global.user_id,
-        },
+        id: Number(req.params.id),
+        userId: req.user.id,
       },
       select: {
         id: true,
         title: true,
         isCompleted: true,
-        priority: true,
-        createdAt: true,
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
       },
     });
 
@@ -155,14 +101,7 @@ const show = async (req, res, next) => {
       });
     }
 
-    return res.status(200).json({
-      id: task.id,
-      title: task.title,
-      isCompleted: task.isCompleted,
-      priority: task.priority,
-      createdAt: task.createdAt,
-      User: task.user,
-    });
+    return res.status(200).json(task);
   } catch (error) {
     return passError(error, next);
   }
@@ -180,39 +119,44 @@ const update = async (req, res, next) => {
     });
   }
 
-  const id = parseInt(req.params.id, 10);
-
-  if (Number.isNaN(id)) {
-    return res.status(400).json({
-      error: "Invalid task ID",
-    });
-  }
-
   try {
-    const task = await prisma.task.update({
+    const existingTask = await prisma.Task.findFirst({
       where: {
-        id_userId: {
-          id,
-          userId: global.user_id,
-        },
-      },
-      data: value,
-      select: {
-        id: true,
-        title: true,
-        isCompleted: true,
-        priority: true,
+        id: Number(req.params.id),
+        userId: req.user.id,
       },
     });
 
-    return res.status(200).json(task);
-  } catch (error) {
-    if (error.code === "P2025") {
+    if (!existingTask) {
       return res.status(404).json({
         error: "Task not found",
       });
     }
 
+    const data = {};
+
+    if (value.title !== undefined) {
+      data.title = value.title;
+    }
+
+    if (value.isCompleted !== undefined) {
+      data.isCompleted = value.isCompleted;
+    }
+
+    const task = await prisma.Task.update({
+      where: {
+        id: Number(req.params.id),
+      },
+      data,
+      select: {
+        id: true,
+        title: true,
+        isCompleted: true,
+      },
+    });
+
+    return res.status(200).json(task);
+  } catch (error) {
     return passError(error, next);
   }
 };
@@ -227,75 +171,31 @@ const deleteTask = async (req, res, next) => {
   }
 
   try {
-    const task = await prisma.task.delete({
+    const existingTask = await prisma.Task.findFirst({
       where: {
-        id_userId: {
-          id,
-          userId: global.user_id,
-        },
-      },
-      select: {
-        id: true,
-        title: true,
-        isCompleted: true,
-        priority: true,
+        id: Number(req.params.id),
+        userId: req.user.id,
       },
     });
 
-    return res.status(200).json(task);
-  } catch (error) {
-    if (error.code === "P2025") {
+    if (!existingTask) {
       return res.status(404).json({
         error: "Task not found",
       });
     }
 
-    return passError(error, next);
-  }
-};
-
-const bulkCreate = async (req, res, next) => {
-  const { tasks } = req.body;
-
-  if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
-    return res.status(400).json({
-      error: "Invalid request data. Expected an array of tasks.",
-    });
-  }
-
-  const validTasks = [];
-
-  for (const task of tasks) {
-    const { error, value } = taskSchema.validate(task, {
-      abortEarly: false,
+    const task = await prisma.Task.delete({
+      where: {
+        id: Number(req.params.id),
+      },
+      select: {
+        id: true,
+        title: true,
+        isCompleted: true,
+      },
     });
 
-    if (error) {
-      return res.status(400).json({
-        error: "Validation failed",
-        details: error.details,
-      });
-    }
-
-    validTasks.push({
-      title: value.title,
-      isCompleted: value.isCompleted,
-      priority: value.priority,
-      userId: global.user_id,
-    });
-  }
-
-  try {
-    const result = await prisma.task.createMany({
-      data: validTasks,
-      skipDuplicates: false,
-    });
-
-    return res.status(201).json({
-      message: "Bulk task creation successful",
-      tasksCreated: result.count,
-      totalRequested: validTasks.length,
-    });
+    return res.status(200).json(task);
   } catch (error) {
     return passError(error, next);
   }

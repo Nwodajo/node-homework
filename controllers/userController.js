@@ -1,11 +1,14 @@
+const pool = require("../db/pg-pool");
 const prisma = require("../db/prisma");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 const {
   hashPassword,
   comparePassword,
 } = require("../utils/passwordUtils");
 
-const { userSchema } = require("../validation/userSchema");
+const userSchema = require("../validation/userSchema");
 
 const passError = (error, next) => {
   if (typeof next === "function") {
@@ -13,6 +16,29 @@ const passError = (error, next) => {
   }
 
   throw error;
+};
+
+const createSession = (res, user) => {
+  const csrfToken = crypto.randomBytes(32).toString("hex");
+
+  const token = jwt.sign(
+    {
+      id: user.id,
+      csrfToken,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1h",
+    }
+  );
+
+  res.cookie("jwt", token, {
+    httpOnly: true,
+    sameSite: "Strict",
+    secure: process.env.NODE_ENV === "production",
+  });
+
+  return csrfToken;
 };
 
 const register = async (req, res, next) => {
@@ -44,56 +70,36 @@ const register = async (req, res, next) => {
         },
       });
 
-      const welcomeTaskData = [
+    const user = result.rows[0];
+
+    await prisma.Task.createMany({
+      data: [
         {
-          title: "Complete your profile",
+          title: "Task 1",
+          isCompleted: false,
           userId: user.id,
-          priority: "medium",
-        },
-        {
-          title: "Add your first task",
-          userId: user.id,
-          priority: "high",
         },
         {
-          title: "Explore the app",
+          title: "Task 2",
+          isCompleted: false,
           userId: user.id,
-          priority: "low",
         },
-      ];
-
-      await tx.task.createMany({
-        data: welcomeTaskData,
-      });
-
-      const welcomeTasks = await tx.task.findMany({
-        where: {
+        {
+          title: "Task 3",
+          isCompleted: false,
           userId: user.id,
-          title: {
-            in: welcomeTaskData.map((task) => task.title),
-          },
         },
-        select: {
-          id: true,
-          title: true,
-          isCompleted: true,
-          userId: true,
-          priority: true,
-        },
-      });
-
-      return {
-        user,
-        welcomeTasks,
-      };
+      ],
     });
 
-    global.user_id = result.user.id;
+    const csrfToken = createSession(res, user);
 
     return res.status(201).json({
-      user: result.user,
-      welcomeTasks: result.welcomeTasks,
-      transactionStatus: "success",
+      user: {
+        name: user.name,
+        email: user.email,
+      },
+      csrfToken,
     });
   } catch (error) {
     if (error.code === "P2002") {
@@ -133,6 +139,8 @@ const logon = async (req, res, next) => {
       });
     }
 
+    const user = result.rows[0];
+
     const passwordMatches = await comparePassword(
       password,
       user.hashedPassword
@@ -144,19 +152,29 @@ const logon = async (req, res, next) => {
       });
     }
 
-    global.user_id = user.id;
+    const csrfToken = createSession(res, user);
 
     return res.status(200).json({
       name: user.name,
       email: user.email,
+      user: {
+        name: user.name,
+        email: user.email,
+      },
+      csrfToken,
     });
   } catch (error) {
     return passError(error, next);
   }
 };
 
-const logoff = async (req, res) => {
-  global.user_id = null;
+const logoff = (req, res) => {
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: "Strict",
+    secure: process.env.NODE_ENV === "production",
+  });
+
   return res.sendStatus(200);
 };
 
