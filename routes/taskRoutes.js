@@ -1,10 +1,10 @@
 const express = require("express");
 
 const {
-  createTask,
-  getTasks,
+  index,
   show,
-  updateTask,
+  create,
+  update,
   deleteTask,
 } = require("../controllers/taskController");
 
@@ -15,14 +15,10 @@ const router = express.Router();
 // All task routes require authentication
 router.use(jwtMiddleware);
 
-router.post("/", createTask);
-
-router.get("/", getTasks);
-
+router.post("/", create);
+router.get("/", index);
 router.get("/:id", show);
-
-router.patch("/:id", updateTask);
-
+router.patch("/:id", update);
 router.delete("/:id", deleteTask);
 
 module.exports = router;

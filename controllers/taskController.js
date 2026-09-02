@@ -65,6 +65,12 @@ const index = async (req, res, next) => {
       },
     });
 
+    if (tasks.length === 0) {
+      return res.status(404).json({
+        error: "No tasks found",
+      });
+    }
+
     return res.status(200).json({
       tasks,
     });
