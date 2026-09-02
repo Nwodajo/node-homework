@@ -7,6 +7,13 @@ const errorHandler = (err, req, res, next) => {
 
   console.error(err.constructor.name, err.message);
   console.error(err.stack);
+  if (err.code === "ECONNREFUSED" && err.port === 5432) {
+    console.error(
+      "PostgreSQL connection was refused. Is the PostgreSQL database service running?"
+    );
+  }
+
+  console.error(err);
 
   res.status(err.status || 500).json({
     error: err.message || "Internal Server Error",

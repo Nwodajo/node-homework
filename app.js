@@ -10,10 +10,8 @@ const prisma = require("./db/prisma");
 
 const app = express();
 
-// Temporary login and in-memory values required by the tests.
+// Represents the currently logged-in user.
 global.user_id = null;
-global.users = [];
-global.tasks = [];
 
 // Parse JSON request bodies.
 app.use(express.json());
