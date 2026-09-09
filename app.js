@@ -1,4 +1,8 @@
 const express = require("express");
+const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const { xss } = require("express-xss-sanitizer");
 
 const timeRouter = require("./routes/timeRoutes");
 const userRouter = require("./routes/userRoutes");
@@ -10,18 +14,32 @@ const prisma = require("./db/prisma");
 
 const app = express();
 
-// Represents the currently logged-in user.
-global.user_id = null;
+// Security middleware
+app.use(helmet());
 
-// Parse JSON request bodies.
+// Parse JSON request bodies
 app.use(express.json());
 
-// Home route.
+// Parse cookies
+app.use(cookieParser());
+
+// Sanitize request data
+app.use(xss());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
+
+app.use(limiter);
+
+// Home route
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
 
-// Database health check.
+// Database health check
 app.get("/health", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -39,22 +57,22 @@ app.get("/health", async (req, res) => {
   }
 });
 
-// Test POST route.
+// Test POST route
 app.post("/testpost", (req, res) => {
   res.status(200).json({
     message: "POST route works",
   });
 });
 
-// Routes.
+// Routes
 app.use("/api", timeRouter);
 app.use("/api/users", userRouter);
 app.use("/api/tasks", taskRouter);
 
-// 404 middleware must come after all routes.
+// 404 middleware
 app.use(notFound);
 
-// Error handler must be last.
+// Error handler must be last
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
@@ -63,7 +81,7 @@ const server = app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}...`);
 });
 
-// Close the server and Prisma connection safely.
+// Close server and database safely
 const shutdown = async () => {
   console.log("Shutting down server...");
 
