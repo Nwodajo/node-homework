@@ -1,4 +1,3 @@
-const pool = require("../db/pg-pool");
 const prisma = require("../db/prisma");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -8,7 +7,7 @@ const {
   comparePassword,
 } = require("../utils/passwordUtils");
 
-const userSchema = require("../validation/userSchema");
+const { userSchema } = require("../validation/userSchema");
 
 const passError = (error, next) => {
   if (typeof next === "function") {
@@ -29,7 +28,7 @@ const createSession = (res, user) => {
     process.env.JWT_SECRET,
     {
       expiresIn: "1h",
-    }
+    },
   );
 
   res.cookie("jwt", token, {
@@ -56,8 +55,8 @@ const register = async (req, res, next) => {
   try {
     const hashedPassword = await hashPassword(value.password);
 
-    const result = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
         data: {
           email: value.email.toLowerCase(),
           name: value.name,
@@ -70,26 +69,27 @@ const register = async (req, res, next) => {
         },
       });
 
-    const user = result.rows[0];
+      await tx.task.createMany({
+        data: [
+          {
+            title: "Task 1",
+            isCompleted: false,
+            userId: newUser.id,
+          },
+          {
+            title: "Task 2",
+            isCompleted: false,
+            userId: newUser.id,
+          },
+          {
+            title: "Task 3",
+            isCompleted: false,
+            userId: newUser.id,
+          },
+        ],
+      });
 
-    await prisma.Task.createMany({
-      data: [
-        {
-          title: "Task 1",
-          isCompleted: false,
-          userId: user.id,
-        },
-        {
-          title: "Task 2",
-          isCompleted: false,
-          userId: user.id,
-        },
-        {
-          title: "Task 3",
-          isCompleted: false,
-          userId: user.id,
-        },
-      ],
+      return newUser;
     });
 
     const csrfToken = createSession(res, user);
@@ -139,11 +139,9 @@ const logon = async (req, res, next) => {
       });
     }
 
-    const user = result.rows[0];
-
     const passwordMatches = await comparePassword(
       password,
-      user.hashedPassword
+      user.hashedPassword,
     );
 
     if (!passwordMatches) {

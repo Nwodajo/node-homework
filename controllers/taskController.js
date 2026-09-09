@@ -213,7 +213,7 @@ module.exports = {
   create,
   update,
   deleteTask,
-  bulkCreate,
+  
 
   getTasks: index,
   createTask: create,
