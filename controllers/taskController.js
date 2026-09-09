@@ -80,6 +80,14 @@ const index = async (req, res, next) => {
 };
 
 const show = async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+
+  if (Number.isNaN(id)) {
+    return res.status(400).json({
+      error: "Invalid task ID",
+    });
+  }
+
   try {
     const task = await prisma.Task.findFirst({
       where: {
@@ -160,6 +168,14 @@ const update = async (req, res, next) => {
 };
 
 const deleteTask = async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+
+  if (Number.isNaN(id)) {
+    return res.status(400).json({
+      error: "Invalid task ID",
+    });
+  }
+
   try {
     const existingTask = await prisma.Task.findFirst({
       where: {
@@ -197,6 +213,7 @@ module.exports = {
   create,
   update,
   deleteTask,
+  bulkCreate,
 
   getTasks: index,
   createTask: create,
