@@ -14,11 +14,17 @@ const prisma = require("./db/prisma");
 
 const app = express();
 
+// Trust the first proxy.
+// This prevents express-rate-limit errors in GitHub Codespaces
+// and also works when deployed behind a proxy such as Render.
+app.set("trust proxy", 1);
+
 // Security middleware
 app.use(helmet());
 
-// Parse JSON request bodies
-app.use(express.json());
+// Parse JSON request bodies.
+// Assignment 10 needs a larger body limit for reCAPTCHA tokens.
+app.use(express.json({ limit: "1mb" }));
 
 // Parse cookies
 app.use(cookieParser());

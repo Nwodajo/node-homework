@@ -51,18 +51,42 @@ const create = async (req, res, next) => {
 
 const index = async (req, res, next) => {
   try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+
+    const sortBy = req.query.sortBy || "createdAt";
+    const sortDirection =
+      req.query.sortDirection === "asc" ? "asc" : "desc";
+
+    const find = req.query.find || "";
+
+    const where = {
+      userId: req.user.id,
+    };
+
+    if (find) {
+      where.title = {
+        contains: find,
+        mode: "insensitive",
+      };
+    }
+
+    const total = await prisma.Task.count({
+      where,
+    });
+
     const tasks = await prisma.Task.findMany({
-      where: {
-        userId: req.user.id,
-      },
+      where,
       select: {
         id: true,
         title: true,
         isCompleted: true,
       },
       orderBy: {
-        id: "desc",
+        [sortBy]: sortDirection,
       },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     if (tasks.length === 0) {
@@ -73,6 +97,12 @@ const index = async (req, res, next) => {
 
     return res.status(200).json({
       tasks,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     return passError(error, next);
@@ -91,7 +121,7 @@ const show = async (req, res, next) => {
   try {
     const task = await prisma.Task.findFirst({
       where: {
-        id: Number(req.params.id),
+        id,
         userId: req.user.id,
       },
       select: {
@@ -125,10 +155,18 @@ const update = async (req, res, next) => {
     });
   }
 
+  const id = parseInt(req.params.id, 10);
+
+  if (Number.isNaN(id)) {
+    return res.status(400).json({
+      error: "Invalid task ID",
+    });
+  }
+
   try {
     const existingTask = await prisma.Task.findFirst({
       where: {
-        id: Number(req.params.id),
+        id,
         userId: req.user.id,
       },
     });
@@ -151,7 +189,7 @@ const update = async (req, res, next) => {
 
     const task = await prisma.Task.update({
       where: {
-        id: Number(req.params.id),
+        id,
       },
       data,
       select: {
@@ -179,7 +217,7 @@ const deleteTask = async (req, res, next) => {
   try {
     const existingTask = await prisma.Task.findFirst({
       where: {
-        id: Number(req.params.id),
+        id,
         userId: req.user.id,
       },
     });
@@ -192,7 +230,7 @@ const deleteTask = async (req, res, next) => {
 
     const task = await prisma.Task.delete({
       where: {
-        id: Number(req.params.id),
+        id,
       },
       select: {
         id: true,
@@ -213,7 +251,6 @@ module.exports = {
   create,
   update,
   deleteTask,
-  
 
   getTasks: index,
   createTask: create,
