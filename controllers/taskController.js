@@ -13,6 +13,7 @@ const passError = (error, next) => {
   throw error;
 };
 
+// CREATE TASK
 const create = async (req, res, next) => {
   const { error, value } = taskSchema.validate(req.body, {
     abortEarly: false,
@@ -26,10 +27,11 @@ const create = async (req, res, next) => {
   }
 
   try {
-    const task = await prisma.Task.create({
+    const task = await prisma.task.create({
       data: {
         title: value.title,
         isCompleted: value.isCompleted,
+        priority: value.priority,
         user: {
           connect: {
             id: req.user.id,
@@ -40,6 +42,7 @@ const create = async (req, res, next) => {
         id: true,
         title: true,
         isCompleted: true,
+        priority: true,
       },
     });
 
@@ -49,16 +52,30 @@ const create = async (req, res, next) => {
   }
 };
 
+// GET ALL TASKS
 const index = async (req, res, next) => {
   try {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
 
-    const sortBy = req.query.sortBy || "createdAt";
+    const find =
+      typeof req.query.find === "string"
+        ? req.query.find.trim()
+        : "";
+
+    const allowedSortFields = [
+      "title",
+      "isCompleted",
+      "priority",
+      "createdAt",
+    ];
+
+    const sortBy = allowedSortFields.includes(req.query.sortBy)
+      ? req.query.sortBy
+      : "createdAt";
+
     const sortDirection =
       req.query.sortDirection === "asc" ? "asc" : "desc";
-
-    const find = req.query.find || "";
 
     const where = {
       userId: req.user.id,
@@ -71,29 +88,30 @@ const index = async (req, res, next) => {
       };
     }
 
-    const total = await prisma.Task.count({
+    const total = await prisma.task.count({
       where,
     });
 
-    const tasks = await prisma.Task.findMany({
-      where,
-      select: {
-        id: true,
-        title: true,
-        isCompleted: true,
-      },
-      orderBy: {
-        [sortBy]: sortDirection,
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
-
-    if (tasks.length === 0) {
+    if (total === 0) {
       return res.status(404).json({
         error: "No tasks found",
       });
     }
+
+    const tasks = await prisma.task.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: {
+        [sortBy]: sortDirection,
+      },
+      select: {
+        id: true,
+        title: true,
+        isCompleted: true,
+        priority: true,
+      },
+    });
 
     return res.status(200).json({
       tasks,
@@ -109,6 +127,7 @@ const index = async (req, res, next) => {
   }
 };
 
+// GET ONE TASK
 const show = async (req, res, next) => {
   const id = parseInt(req.params.id, 10);
 
@@ -119,7 +138,7 @@ const show = async (req, res, next) => {
   }
 
   try {
-    const task = await prisma.Task.findFirst({
+    const task = await prisma.task.findFirst({
       where: {
         id,
         userId: req.user.id,
@@ -128,6 +147,7 @@ const show = async (req, res, next) => {
         id: true,
         title: true,
         isCompleted: true,
+        priority: true,
       },
     });
 
@@ -143,6 +163,7 @@ const show = async (req, res, next) => {
   }
 };
 
+// UPDATE TASK
 const update = async (req, res, next) => {
   const { error, value } = patchTaskSchema.validate(req.body, {
     abortEarly: false,
@@ -164,7 +185,7 @@ const update = async (req, res, next) => {
   }
 
   try {
-    const existingTask = await prisma.Task.findFirst({
+    const existingTask = await prisma.task.findFirst({
       where: {
         id,
         userId: req.user.id,
@@ -187,7 +208,11 @@ const update = async (req, res, next) => {
       data.isCompleted = value.isCompleted;
     }
 
-    const task = await prisma.Task.update({
+    if (value.priority !== undefined) {
+      data.priority = value.priority;
+    }
+
+    const task = await prisma.task.update({
       where: {
         id,
       },
@@ -196,6 +221,7 @@ const update = async (req, res, next) => {
         id: true,
         title: true,
         isCompleted: true,
+        priority: true,
       },
     });
 
@@ -205,6 +231,7 @@ const update = async (req, res, next) => {
   }
 };
 
+// DELETE ONE TASK
 const deleteTask = async (req, res, next) => {
   const id = parseInt(req.params.id, 10);
 
@@ -215,7 +242,7 @@ const deleteTask = async (req, res, next) => {
   }
 
   try {
-    const existingTask = await prisma.Task.findFirst({
+    const existingTask = await prisma.task.findFirst({
       where: {
         id,
         userId: req.user.id,
@@ -228,7 +255,7 @@ const deleteTask = async (req, res, next) => {
       });
     }
 
-    const task = await prisma.Task.delete({
+    const task = await prisma.task.delete({
       where: {
         id,
       },
@@ -236,6 +263,7 @@ const deleteTask = async (req, res, next) => {
         id: true,
         title: true,
         isCompleted: true,
+        priority: true,
       },
     });
 
@@ -245,6 +273,8 @@ const deleteTask = async (req, res, next) => {
   }
 };
 
+// ASSIGNMENT 11 EXTRA FEATURE:
+// BULK DELETE TASKS
 const bulkDeleteTasks = async (req, res, next) => {
   try {
     const { ids } = req.body;
@@ -263,7 +293,7 @@ const bulkDeleteTasks = async (req, res, next) => {
       });
     }
 
-    const result = await prisma.Task.deleteMany({
+    const result = await prisma.task.deleteMany({
       where: {
         id: {
           in: taskIds,
