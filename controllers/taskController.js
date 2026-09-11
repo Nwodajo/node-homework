@@ -245,12 +245,49 @@ const deleteTask = async (req, res, next) => {
   }
 };
 
+const bulkDeleteTasks = async (req, res, next) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        error: "ids must be a non-empty array",
+      });
+    }
+
+    const taskIds = ids.map((id) => Number(id));
+
+    if (taskIds.some((id) => Number.isNaN(id))) {
+      return res.status(400).json({
+        error: "All task IDs must be valid numbers",
+      });
+    }
+
+    const result = await prisma.Task.deleteMany({
+      where: {
+        id: {
+          in: taskIds,
+        },
+        userId: req.user.id,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Tasks deleted successfully",
+      deletedCount: result.count,
+    });
+  } catch (error) {
+    return passError(error, next);
+  }
+};
+
 module.exports = {
   index,
   show,
   create,
   update,
   deleteTask,
+  bulkDeleteTasks,
 
   getTasks: index,
   createTask: create,
