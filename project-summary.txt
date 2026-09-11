@@ -38,9 +38,9 @@ GET /api/tasks
 Supported query parameters:
 - page
 - limit
-- search
+- find
 - sortBy
-- order
+- sortDirection
 
 Testing:
 - All Jest tests passed: 39/39.
