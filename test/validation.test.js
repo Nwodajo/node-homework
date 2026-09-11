@@ -16,81 +16,76 @@ describe("user object validation tests", () => {
     );
 
     expect(
-      error?.details.some(
-        (detail) => detail.context?.key === "password",
+      error.details.find(
+        (detail) => detail.context.key === "password",
       ),
-    ).toBe(true);
+    ).toBeDefined();
   });
 
   it("2. requires that an email be specified", () => {
-  const user = {
-    name: "Bob Smith",
-    email: "bob@sample.com",
-    password: "Pa$$word20",
-  };
+    const { error } = userSchema.validate(
+      {
+        name: "Bob Smith",
+        password: "Pa$$word20",
+      },
+      { abortEarly: false },
+    );
 
-  delete user.email;
-
-  const { error } = userSchema.validate(user, {
-    abortEarly: false,
+    expect(
+      error.details.find(
+        (detail) => detail.context.key === "email",
+      ),
+    ).toBeDefined();
   });
 
-  expect(error?.details.some(
-    (detail) => detail.context?.key === "email"
-  )).toBe(true);
-});
+  it("3. does not accept an invalid email", () => {
+    const { error } = userSchema.validate(
+      {
+        name: "Bob Smith",
+        email: "not-an-email",
+        password: "Pa$$word20",
+      },
+      { abortEarly: false },
+    );
 
-it("3. does not accept an invalid email", () => {
-  const user = {
-    name: "Bob Smith",
-    email: "not-an-email",
-    password: "Pa$$word20",
-  };
-
-  const { error } = userSchema.validate(user, {
-    abortEarly: false,
+    expect(
+      error.details.find(
+        (detail) => detail.context.key === "email",
+      ),
+    ).toBeDefined();
   });
 
-  expect(error?.details.some(
-    (detail) => detail.context?.key === "email"
-  )).toBe(true);
-});
+  it("4. requires a password", () => {
+    const { error } = userSchema.validate(
+      {
+        name: "Bob Smith",
+        email: "bob@sample.com",
+      },
+      { abortEarly: false },
+    );
 
-it("4. requires a password", () => {
-  const user = {
-    name: "Bob Smith",
-    email: "bob@sample.com",
-    password: "Pa$$word20",
-  };
-
-  delete user.password;
-
-  const { error } = userSchema.validate(user, {
-    abortEarly: false,
+    expect(
+      error.details.find(
+        (detail) => detail.context.key === "password",
+      ),
+    ).toBeDefined();
   });
 
-  expect(error?.details.some(
-    (detail) => detail.context?.key === "password"
-  )).toBe(true);
-});
+  it("5. requires name", () => {
+    const { error } = userSchema.validate(
+      {
+        email: "bob@sample.com",
+        password: "Pa$$word20",
+      },
+      { abortEarly: false },
+    );
 
-it("5. requires name", () => {
-  const user = {
-    name: "Bob Smith",
-    email: "bob@sample.com",
-    password: "Pa$$word20",
-  };
-
-  delete user.name;
-
-  const { error } = userSchema.validate(user, {
-    abortEarly: false,
+    expect(
+      error.details.find(
+        (detail) => detail.context.key === "name",
+      ),
+    ).toBeDefined();
   });
-
-  expect(error?.details.some(
-    (detail) => detail.context?.key === "name"
-  )).toBe(true);
-});
 
   it("6. the name must be valid", () => {
     const { error } = userSchema.validate(
@@ -103,10 +98,10 @@ it("5. requires name", () => {
     );
 
     expect(
-      error?.details.some(
-        (detail) => detail.context?.key === "name",
+      error.details.find(
+        (detail) => detail.context.key === "name",
       ),
-    ).toBe(true);
+    ).toBeDefined();
   });
 
   it("7. valid user object returns no error", () => {
@@ -127,10 +122,10 @@ describe("taskSchema validation tests", () => {
     });
 
     expect(
-      error?.details.some(
-        (detail) => detail.context?.key === "title",
+      error.details.find(
+        (detail) => detail.context.key === "title",
       ),
-    ).toBe(true);
+    ).toBeDefined();
   });
 
   it("9. isCompleted must be valid if specified", () => {
@@ -140,10 +135,10 @@ describe("taskSchema validation tests", () => {
     });
 
     expect(
-      error?.details.some(
-        (detail) => detail.context?.key === "isCompleted",
+      error.details.find(
+        (detail) => detail.context.key === "isCompleted",
       ),
-    ).toBe(true);
+    ).toBeDefined();
   });
 
   it("10. isCompleted defaults to false when not specified", () => {
