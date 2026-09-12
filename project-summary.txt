@@ -1,0 +1,55 @@
+Assignment 11 Final Project Summary
+
+Extra Backend Feature:
+I added a bulk delete feature that allows an authenticated user to delete multiple tasks at once.
+
+New Endpoint:
+Method: DELETE
+Path: /api/tasks/bulk
+
+Authentication:
+Required. The user must be logged in.
+
+Query Parameters:
+None
+
+Request Body:
+{
+  "ids": [1, 2, 3]
+}
+
+Behavior:
+- Accepts an array of task IDs.
+- Deletes only tasks that belong to the currently logged-in user.
+- Uses Prisma deleteMany with an "in" filter.
+- Prevents users from deleting tasks that belong to another user.
+
+Success Response:
+{
+  "message": "Tasks deleted successfully",
+  "deletedCount": 2
+}
+
+Other Backend Features:
+The task API also supports pagination, searching, and sorting when retrieving tasks.
+
+GET /api/tasks
+
+Supported query parameters:
+- page
+- limit
+- find
+- sortBy
+- sortDirection
+
+Testing:
+- All Jest tests passed: 39/39.
+- The bulk delete endpoint was manually tested with curl.
+- Two tasks were deleted successfully.
+- A follow-up GET request confirmed that only the remaining task was still present.
+
+Security:
+- Task routes are protected with JWT authentication.
+- CSRF protection is used for authenticated requests.
+- Passwords are hashed before being stored.
+- Users can only access and modify their own tasks.

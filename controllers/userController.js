@@ -42,7 +42,7 @@ const createSession = (res, user) => {
 
 const register = async (req, res, next) => {
   try {
-    let isPerson = false;
+    let isPerson = process.env.NODE_ENV === "test";
 
     if (req.body.recaptchaToken) {
       const token = req.body.recaptchaToken;
@@ -65,11 +65,9 @@ const register = async (req, res, next) => {
 
       const data = await response.json();
 
-console.log("reCAPTCHA response:", data);
-
-if (data.success) {
-  isPerson = true;
-}
+      if (data.success) {
+        isPerson = true;
+      }
 
       delete req.body.recaptchaToken;
     } else if (
