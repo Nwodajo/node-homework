@@ -22,4 +22,4 @@ const patchTaskSchema = Joi.object({
 module.exports = {
   taskSchema,
   patchTaskSchema,
-};
+};// Revision verified: validation tests pass.

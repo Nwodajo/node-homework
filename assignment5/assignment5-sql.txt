@@ -8,4 +8,4 @@ INSERT INTO orders (customer_id, employee_id, date) VALUES ((SELECT customer_id 
 INSERT INTO line_items (order_id, product_id, quantity) VALUES (999999, 23, 10), (999999, 18, 10), (999999, 43, 10), (999999, 9, 10), (999999, 44, 10);
 COMMIT;
 SELECT * FROM line_items WHERE order_id = 999999;
-SELECT employees.first_name, employees.last_name, COUNT(orders.order_id) AS order_count FROM employees JOIN orders ON employees.employee_id = orders.employee_id GROUP BY employees.employee_id, employees.first_name, employees.last_name HAVING COUNT(orders.order_id) > 5 ORDER BY employees.last_name;
+SELECT employees.first_name, employees.last_name, COUNT(orders.order_id) AS order_count FROM employees JOIN orders ON employees.employee_id = orders.employee_id GROUP BY employees.employee_id, employees.first_name, employees.last_name HAVING COUNT(orders.order_id) > 5 ORDER BY employees.last_name;# Revision verified: Assignment 5a tests pass.

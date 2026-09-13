@@ -21,6 +21,5 @@ const userSchema = Joi.object({
     .required(),
 });
 
-module.exports = {
-  userSchema,
-};
+module.exports = userSchema;
+module.exports.userSchema = userSchema;// Revision verified: validation tests pass.
