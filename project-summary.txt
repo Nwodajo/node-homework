@@ -2,7 +2,7 @@ Assignment 11 Final Project Summary
 
 PROJECT OVERVIEW
 
-For Assignment 11, I completed a full-stack Todo application with authentication, task CRUD functionality, Prisma database access, validation, security protections, and an additional backend feature.
+For Assignment 11, I completed a full-stack Todo application with authentication, task CRUD functionality, Prisma database access, validation, security protections, search, sorting, pagination, and an additional backend feature.
 
 The project includes:
 
@@ -50,6 +50,8 @@ Request Body:
 Behavior:
 
 - Accepts an array of task IDs.
+- Requires the ids array to contain at least one item.
+- Validates that task IDs are valid numbers.
 - Deletes multiple tasks in one request.
 - Uses Prisma deleteMany with an "in" filter.
 - Only deletes tasks that belong to the currently authenticated user.
@@ -92,39 +94,57 @@ page
 Used to select the requested page.
 
 Example:
+
 GET /api/tasks?page=1
+
 
 limit
 Controls the number of tasks returned per page.
 
 Example:
+
 GET /api/tasks?page=1&limit=10
 
+
 find
-Searches tasks.
+Searches tasks by title.
 
 Example:
+
 GET /api/tasks?find=meeting
+
 
 sortBy
 Selects the field used for sorting.
 
+Supported values include:
+
+- title
+- isCompleted
+- priority
+- createdAt
+
 Example:
-GET /api/tasks?sortBy=creationDate
+
+GET /api/tasks?sortBy=createdAt
+
 
 sortDirection
 Controls the sorting direction.
 
 Supported values:
+
 - asc
 - desc
 
 Example:
-GET /api/tasks?sortBy=creationDate&sortDirection=desc
+
+GET /api/tasks?sortBy=createdAt&sortDirection=desc
+
 
 Combined Example:
 
-GET /api/tasks?page=1&limit=10&find=meeting&sortBy=creationDate&sortDirection=desc
+GET /api/tasks?page=1&limit=10&find=meeting&sortBy=createdAt&sortDirection=desc
 
 
 CREATE TASK
@@ -149,6 +169,28 @@ Behavior:
 
 - Creates a new task for the authenticated user.
 - The created task belongs to that user.
+- Task input is validated before it is saved.
+
+
+GET ONE TASK
+
+Method:
+GET
+
+Path:
+/api/tasks/:id
+
+Authentication:
+Required.
+
+Example:
+
+GET /api/tasks/15
+
+Behavior:
+
+- Retrieves one task by ID.
+- Users can only retrieve tasks that belong to them.
 
 
 UPDATE TASK
@@ -177,6 +219,7 @@ Behavior:
 
 - Updates an existing task.
 - Users can only update tasks that belong to them.
+- Updated task input is validated before it is saved.
 
 
 DELETE ONE TASK
@@ -210,6 +253,7 @@ POST
 Path:
 /api/users/register
 
+
 User Logon
 
 Method:
@@ -217,6 +261,7 @@ POST
 
 Path:
 /api/users/logon
+
 
 User Logoff
 
@@ -226,9 +271,10 @@ POST
 Path:
 /api/users/logoff
 
+
 Authentication is implemented using JWT.
 
-Authenticated task requests also use CSRF protection.
+Authenticated task requests use the logged-in user's ID so users can only work with their own tasks.
 
 
 SECURITY
@@ -237,7 +283,7 @@ The application includes:
 
 - JWT authentication
 - HttpOnly authentication cookies
-- CSRF token validation
+- CSRF protection
 - Password hashing
 - XSS sanitization
 - Helmet security headers
@@ -247,44 +293,43 @@ The application includes:
 
 Users can only access, update, or delete their own tasks.
 
-The bulk delete feature also checks ownership so users cannot delete tasks belonging to another user.
+The bulk delete feature also checks user ownership so one user cannot delete tasks belonging to another user.
 
 
 TESTING
 
-Existing automated Jest tests cover:
+Automated Jest tests cover the task functionality and Assignment 11 enhancements.
 
-- User registration
-- User logon
-- User logoff
+The Assignment 11 automated test suite includes tests for:
+
 - Task creation
 - Task retrieval
 - Task updates
 - Task deletion
-- Authentication behavior
-- Validation behavior
+- User ownership protection
+- Search
+- Pagination
+- Sorting
+- Bulk task deletion
+- Empty bulk delete arrays
+- Invalid bulk delete task IDs
+- Preventing one user from bulk deleting another user's tasks
+- Confirming bulk deleted tasks are removed from the database
+- Confirming another user's task remains in the database
 
-The bulk delete endpoint was manually tested using curl.
+Assignment 11 test results:
 
-Manual Bulk Delete Test:
+Test Suites: 1 passed, 1 total
+Tests: 29 passed, 29 total
+Tests Failed: 0
 
-1. Multiple tasks were created.
-2. A DELETE request was sent to:
-
-DELETE /api/tasks/bulk
-
-with:
-
-{
-  "ids": [1, 2]
-}
-
-3. The endpoint successfully deleted the selected tasks.
-4. A follow-up GET /api/tasks request confirmed that only the remaining task was present.
+The automated tests confirm that search, pagination, sorting, task ownership, and the new bulk delete feature work as expected.
 
 
 FINAL PROJECT GOAL
 
 The main goal of this project was to connect the frontend, backend, database, and authentication system into one working full-stack application.
 
-I am especially proud of implementing the bulk delete feature with user ownership protection and Prisma. This project also helped me improve my understanding of API design, authentication, security, testing, and debugging.
+I am especially proud of implementing the bulk delete feature with user ownership protection and Prisma.
+
+This project also helped me improve my understanding of API design, authentication, security, testing, database operations, and debugging.
