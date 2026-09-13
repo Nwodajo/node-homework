@@ -1,11 +1,39 @@
 Assignment 11 Final Project Summary
 
-Extra Backend Feature:
-I added a bulk delete feature that allows an authenticated user to delete multiple tasks at once.
+PROJECT OVERVIEW
 
-New Endpoint:
-Method: DELETE
-Path: /api/tasks/bulk
+For Assignment 11, I completed a full-stack Todo application with authentication, task CRUD functionality, Prisma database access, validation, security protections, search, sorting, pagination, and an additional backend feature.
+
+The project includes:
+
+- User registration
+- User logon
+- User logoff
+- JWT authentication
+- CSRF protection
+- Password hashing
+- Task creation
+- Task retrieval
+- Task updates
+- Task deletion
+- Search
+- Sorting
+- Pagination
+- Bulk task deletion
+- User-specific task protection
+
+
+EXTRA BACKEND FEATURE
+
+I added a bulk delete feature that allows an authenticated user to delete multiple tasks in one request.
+
+Bulk Delete Endpoint
+
+Method:
+DELETE
+
+Path:
+/api/tasks/bulk
 
 Authentication:
 Required. The user must be logged in.
@@ -14,42 +42,294 @@ Query Parameters:
 None
 
 Request Body:
+
 {
   "ids": [1, 2, 3]
 }
 
 Behavior:
+
 - Accepts an array of task IDs.
-- Deletes only tasks that belong to the currently logged-in user.
+- Requires the ids array to contain at least one item.
+- Validates that task IDs are valid numbers.
+- Deletes multiple tasks in one request.
 - Uses Prisma deleteMany with an "in" filter.
+- Only deletes tasks that belong to the currently authenticated user.
 - Prevents users from deleting tasks that belong to another user.
 
-Success Response:
+Example Request:
+
+DELETE /api/tasks/bulk
+
+Request Body:
+
+{
+  "ids": [1, 2, 3]
+}
+
+Success Response Example:
+
 {
   "message": "Tasks deleted successfully",
   "deletedCount": 2
 }
 
-Other Backend Features:
-The task API also supports pagination, searching, and sorting when retrieving tasks.
 
-GET /api/tasks
+TASK RETRIEVAL
 
-Supported query parameters:
-- page
-- limit
-- find
-- sortBy
-- sortDirection
+Method:
+GET
 
-Testing:
-- All Jest tests passed: 39/39.
-- The bulk delete endpoint was manually tested with curl.
-- Two tasks were deleted successfully.
-- A follow-up GET request confirmed that only the remaining task was still present.
+Path:
+/api/tasks
 
-Security:
-- Task routes are protected with JWT authentication.
-- CSRF protection is used for authenticated requests.
-- Passwords are hashed before being stored.
-- Users can only access and modify their own tasks.
+Authentication:
+Required.
+
+The GET /api/tasks endpoint supports pagination, searching, and sorting.
+
+Supported Query Parameters:
+
+page
+Used to select the requested page.
+
+Example:
+
+GET /api/tasks?page=1
+
+
+limit
+Controls the number of tasks returned per page.
+
+Example:
+
+GET /api/tasks?page=1&limit=10
+
+
+find
+Searches tasks by title.
+
+Example:
+
+GET /api/tasks?find=meeting
+
+
+sortBy
+Selects the field used for sorting.
+
+Supported values include:
+
+- title
+- isCompleted
+- priority
+- createdAt
+
+Example:
+
+GET /api/tasks?sortBy=createdAt
+
+
+sortDirection
+Controls the sorting direction.
+
+Supported values:
+
+- asc
+- desc
+
+Example:
+
+GET /api/tasks?sortBy=createdAt&sortDirection=desc
+
+
+Combined Example:
+
+GET /api/tasks?page=1&limit=10&find=meeting&sortBy=createdAt&sortDirection=desc
+
+
+CREATE TASK
+
+Method:
+POST
+
+Path:
+/api/tasks
+
+Authentication:
+Required.
+
+Example Request Body:
+
+{
+  "title": "Finish final project",
+  "isCompleted": false
+}
+
+Behavior:
+
+- Creates a new task for the authenticated user.
+- The created task belongs to that user.
+- Task input is validated before it is saved.
+
+
+GET ONE TASK
+
+Method:
+GET
+
+Path:
+/api/tasks/:id
+
+Authentication:
+Required.
+
+Example:
+
+GET /api/tasks/15
+
+Behavior:
+
+- Retrieves one task by ID.
+- Users can only retrieve tasks that belong to them.
+
+
+UPDATE TASK
+
+Method:
+PATCH
+
+Path:
+/api/tasks/:id
+
+Authentication:
+Required.
+
+Example Request:
+
+PATCH /api/tasks/15
+
+Example Request Body:
+
+{
+  "title": "Update final project",
+  "isCompleted": true
+}
+
+Behavior:
+
+- Updates an existing task.
+- Users can only update tasks that belong to them.
+- Updated task input is validated before it is saved.
+
+
+DELETE ONE TASK
+
+Method:
+DELETE
+
+Path:
+/api/tasks/:id
+
+Authentication:
+Required.
+
+Example:
+
+DELETE /api/tasks/15
+
+Behavior:
+
+- Deletes one task.
+- Users can only delete their own tasks.
+
+
+AUTHENTICATION
+
+User Registration
+
+Method:
+POST
+
+Path:
+/api/users/register
+
+
+User Logon
+
+Method:
+POST
+
+Path:
+/api/users/logon
+
+
+User Logoff
+
+Method:
+POST
+
+Path:
+/api/users/logoff
+
+
+Authentication is implemented using JWT.
+
+Authenticated task requests use the logged-in user's ID so users can only work with their own tasks.
+
+
+SECURITY
+
+The application includes:
+
+- JWT authentication
+- HttpOnly authentication cookies
+- CSRF protection
+- Password hashing
+- XSS sanitization
+- Helmet security headers
+- Rate limiting
+- Input validation
+- User ownership checks
+
+Users can only access, update, or delete their own tasks.
+
+The bulk delete feature also checks user ownership so one user cannot delete tasks belonging to another user.
+
+
+TESTING
+
+Automated Jest tests cover the task functionality and Assignment 11 enhancements.
+
+The Assignment 11 automated test suite includes tests for:
+
+- Task creation
+- Task retrieval
+- Task updates
+- Task deletion
+- User ownership protection
+- Search
+- Pagination
+- Sorting
+- Bulk task deletion
+- Empty bulk delete arrays
+- Invalid bulk delete task IDs
+- Preventing one user from bulk deleting another user's tasks
+- Confirming bulk deleted tasks are removed from the database
+- Confirming another user's task remains in the database
+
+Assignment 11 test results:
+
+Test Suites: 1 passed, 1 total
+Tests: 29 passed, 29 total
+Tests Failed: 0
+
+The automated tests confirm that search, pagination, sorting, task ownership, and the new bulk delete feature work as expected.
+
+
+FINAL PROJECT GOAL
+
+The main goal of this project was to connect the frontend, backend, database, and authentication system into one working full-stack application.
+
+I am especially proud of implementing the bulk delete feature with user ownership protection and Prisma.
+
+This project also helped me improve my understanding of API design, authentication, security, testing, database operations, and debugging.
