@@ -1,11 +1,39 @@
 Assignment 11 Final Project Summary
 
-Extra Backend Feature:
-I added a bulk delete feature that allows an authenticated user to delete multiple tasks at once.
+PROJECT OVERVIEW
 
-New Endpoint:
-Method: DELETE
-Path: /api/tasks/bulk
+For Assignment 11, I completed a full-stack Todo application with authentication, task CRUD functionality, Prisma database access, validation, security protections, and an additional backend feature.
+
+The project includes:
+
+- User registration
+- User logon
+- User logoff
+- JWT authentication
+- CSRF protection
+- Password hashing
+- Task creation
+- Task retrieval
+- Task updates
+- Task deletion
+- Search
+- Sorting
+- Pagination
+- Bulk task deletion
+- User-specific task protection
+
+
+EXTRA BACKEND FEATURE
+
+I added a bulk delete feature that allows an authenticated user to delete multiple tasks in one request.
+
+Bulk Delete Endpoint
+
+Method:
+DELETE
+
+Path:
+/api/tasks/bulk
 
 Authentication:
 Required. The user must be logged in.
@@ -14,42 +42,249 @@ Query Parameters:
 None
 
 Request Body:
+
 {
   "ids": [1, 2, 3]
 }
 
 Behavior:
+
 - Accepts an array of task IDs.
-- Deletes only tasks that belong to the currently logged-in user.
+- Deletes multiple tasks in one request.
 - Uses Prisma deleteMany with an "in" filter.
+- Only deletes tasks that belong to the currently authenticated user.
 - Prevents users from deleting tasks that belong to another user.
 
-Success Response:
+Example Request:
+
+DELETE /api/tasks/bulk
+
+Request Body:
+
+{
+  "ids": [1, 2, 3]
+}
+
+Success Response Example:
+
 {
   "message": "Tasks deleted successfully",
   "deletedCount": 2
 }
 
-Other Backend Features:
-The task API also supports pagination, searching, and sorting when retrieving tasks.
 
-GET /api/tasks
+TASK RETRIEVAL
 
-Supported query parameters:
-- page
-- limit
-- find
-- sortBy
-- sortDirection
+Method:
+GET
 
-Testing:
-- All Jest tests passed: 39/39.
-- The bulk delete endpoint was manually tested with curl.
-- Two tasks were deleted successfully.
-- A follow-up GET request confirmed that only the remaining task was still present.
+Path:
+/api/tasks
 
-Security:
-- Task routes are protected with JWT authentication.
-- CSRF protection is used for authenticated requests.
-- Passwords are hashed before being stored.
-- Users can only access and modify their own tasks.
+Authentication:
+Required.
+
+The GET /api/tasks endpoint supports pagination, searching, and sorting.
+
+Supported Query Parameters:
+
+page
+Used to select the requested page.
+
+Example:
+GET /api/tasks?page=1
+
+limit
+Controls the number of tasks returned per page.
+
+Example:
+GET /api/tasks?page=1&limit=10
+
+find
+Searches tasks.
+
+Example:
+GET /api/tasks?find=meeting
+
+sortBy
+Selects the field used for sorting.
+
+Example:
+GET /api/tasks?sortBy=creationDate
+
+sortDirection
+Controls the sorting direction.
+
+Supported values:
+- asc
+- desc
+
+Example:
+GET /api/tasks?sortBy=creationDate&sortDirection=desc
+
+Combined Example:
+
+GET /api/tasks?page=1&limit=10&find=meeting&sortBy=creationDate&sortDirection=desc
+
+
+CREATE TASK
+
+Method:
+POST
+
+Path:
+/api/tasks
+
+Authentication:
+Required.
+
+Example Request Body:
+
+{
+  "title": "Finish final project",
+  "isCompleted": false
+}
+
+Behavior:
+
+- Creates a new task for the authenticated user.
+- The created task belongs to that user.
+
+
+UPDATE TASK
+
+Method:
+PATCH
+
+Path:
+/api/tasks/:id
+
+Authentication:
+Required.
+
+Example Request:
+
+PATCH /api/tasks/15
+
+Example Request Body:
+
+{
+  "title": "Update final project",
+  "isCompleted": true
+}
+
+Behavior:
+
+- Updates an existing task.
+- Users can only update tasks that belong to them.
+
+
+DELETE ONE TASK
+
+Method:
+DELETE
+
+Path:
+/api/tasks/:id
+
+Authentication:
+Required.
+
+Example:
+
+DELETE /api/tasks/15
+
+Behavior:
+
+- Deletes one task.
+- Users can only delete their own tasks.
+
+
+AUTHENTICATION
+
+User Registration
+
+Method:
+POST
+
+Path:
+/api/users/register
+
+User Logon
+
+Method:
+POST
+
+Path:
+/api/users/logon
+
+User Logoff
+
+Method:
+POST
+
+Path:
+/api/users/logoff
+
+Authentication is implemented using JWT.
+
+Authenticated task requests also use CSRF protection.
+
+
+SECURITY
+
+The application includes:
+
+- JWT authentication
+- HttpOnly authentication cookies
+- CSRF token validation
+- Password hashing
+- XSS sanitization
+- Helmet security headers
+- Rate limiting
+- Input validation
+- User ownership checks
+
+Users can only access, update, or delete their own tasks.
+
+The bulk delete feature also checks ownership so users cannot delete tasks belonging to another user.
+
+
+TESTING
+
+Existing automated Jest tests cover:
+
+- User registration
+- User logon
+- User logoff
+- Task creation
+- Task retrieval
+- Task updates
+- Task deletion
+- Authentication behavior
+- Validation behavior
+
+The bulk delete endpoint was manually tested using curl.
+
+Manual Bulk Delete Test:
+
+1. Multiple tasks were created.
+2. A DELETE request was sent to:
+
+DELETE /api/tasks/bulk
+
+with:
+
+{
+  "ids": [1, 2]
+}
+
+3. The endpoint successfully deleted the selected tasks.
+4. A follow-up GET /api/tasks request confirmed that only the remaining task was present.
+
+
+FINAL PROJECT GOAL
+
+The main goal of this project was to connect the frontend, backend, database, and authentication system into one working full-stack application.
+
+I am especially proud of implementing the bulk delete feature with user ownership protection and Prisma. This project also helped me improve my understanding of API design, authentication, security, testing, and debugging.
